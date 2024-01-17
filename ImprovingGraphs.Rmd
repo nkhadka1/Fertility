@@ -1,0 +1,102 @@
+---
+title: "ImproveGraphics"
+author: "Nabina Khadka"
+date: "2023-03-14"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(plotly)
+library(scatterplot3d)
+```
+
+## Loading Files
+
+```{r}
+load("TFR_long.Rdata")
+load("IMR_long.RData")
+```
+
+## Checking for MisMatches
+
+```{r}
+miss = anti_join(IMR_long,
+                 TFR_long,
+                 by = c("country_name","year"))
+nrow(miss)
+```
+
+
+## Joining two data sets
+
+```{r}
+IMR_TFR = IMR_long %>% 
+   left_join(TFR_long,
+        by = c("country_name",
+               "country_code",
+               "year"))
+glimpse(IMR_TFR)
+```
+
+
+## Scatter Plot
+
+```{r}
+g = IMR_TFR %>% 
+  ggplot(aes(IMR,TFR,group = country_name)) +
+  geom_point(size = .1)
+ggplotly(g)
+```
+
+
+## Improving the plot
+
+The scatter plot shows that there is a chunk of data at the start and it is difficult to explain and examize the data. To improve on the graph, let us apply few more data visualization techniques.
+
+Let us start.
+
+## ScatterPlot 3D
+
+```{r}
+
+data <- IMR_TFR %>%
+  filter(IMR > 100.0000 , 
+         TFR > 7.0000 )
+
+glimpse(data)
+
+scatterplot3d(data[,3:5] , angle = 75) 
+
+```
+
+## Area Graph
+
+```{r}
+
+ggplot(data  , aes(x = TFR , y = IMR)) +
+  geom_area(alpha = 0.1) +
+  geom_line()
+
+```
+
+## Density Plot
+
+```{r}
+
+ggplot(data , aes(x= TFR , y = IMR )) +
+  geom_bin2d() +
+  theme_bw()
+
+
+```

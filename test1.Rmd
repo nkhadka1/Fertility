@@ -1,0 +1,129 @@
+---
+title: "Fertility3"
+author: "Nabina Khadka"
+date: "2023-03-04"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analysis on Fertility of Mother's Hispanic Origin
+
+
+## Load the library
+```{r}
+library(tidyverse)
+library(plotly)
+library(readr)
+```
+
+## Get Data
+```{r}
+Natality_MOH <- read_delim("Natality,MOH.txt", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
+
+```
+
+## Look Data
+```{r}
+glimpse(Natality_MOH) 
+```
+
+## Rename and Select
+```{r}
+data <- Natality_MOH %>%
+      rename ( Origin = `Mother's Hispanic Origin`  ,
+               Race = `Mother's Single Race 6` ,
+               Region = `Census Division of Residence Code`,
+               Birth = Births , 
+               Pop = `Female Population`, 
+               Rate = `Fertility Rate` ,
+               Age = `Age of Mother 9 Code`  ) %>% 
+        select( Origin , Race, Birth , Pop,Rate ,Age , Year , Region )
+        
+
+glimpse(data)
+ 
+```
+
+## Recode
+```{r}
+data_recode <- data %>%
+  mutate(
+         Race = ifelse(Race == "American Indian or Alaska Native","AmInd",Race),
+         Race = ifelse(Race == "Asian or Pacific Islander","API",Race),
+         Race = ifelse(Race == "Black or African American","Black",Race),
+         Pop = as.numeric(Pop),
+         Rate = as.numeric(Rate)/1000) %>% 
+filter(Race != "Not Reported") %>%
+  drop_na()
+
+glimpse(data_recode)
+
+```
+
+
+## Grid Plot
+```{r}
+data_recode %>%
+  filter(Age == "15-19") %>%
+  ggplot(aes(x = Origin , y = Rate)) +
+  geom_point(alpha = 0.4) +
+  facet_grid(Race~Region) +
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("Plot of Origin for 15-19 age group by Race and Region")
+
+```
+
+## Flip the Grid
+
+```{r}
+data_recode %>%
+  filter(Age == "15-19") %>%
+  ggplot(aes(x = Origin , y = Rate)) +
+  geom_point(alpha = 0.4) +
+  facet_grid(Region~Race) +
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("Flip Grid Plot of Origin for 15-19 age group by Race and Region")
+```
+
+## National TFR by Origin
+
+```{r}
+plot = data_recode %>% 
+  group_by( Year,Origin, Age) %>% 
+  summarize(Birth = sum(Birth),
+            Pop = sum(Pop)) %>% 
+  mutate(Rate = Birth/Pop)%>% 
+  summarize(TFR = sum(Rate) * 5) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = Year,y = TFR, color = Origin)) +
+  geom_point()
+
+ggplotly(plot)
+
+
+```
+
+
+## Plot with Origin and Region
+
+```{r}
+plot1 = data_recode %>% 
+  group_by(Year, Region, Origin, Age) %>% 
+  summarize(Birth = sum(Birth),
+            Pop = sum(Pop)) %>% 
+  mutate(Rate = Birth/Pop)%>% 
+  summarize(TFR = sum(Rate) * 5) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = Year,y = TFR, color = Origin)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90))+
+  facet_grid(Origin~Region)
+
+ggplotly(plot1)
+
+```
